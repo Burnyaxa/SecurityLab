@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using SecurityLab1.Interfaces;
@@ -39,15 +40,17 @@ namespace SecurityLab1.TaskSolvers
         private List<string> DecipherXor(IEnumerable<byte> text)
         {
             var result = new List<string>();
-            var builder = new StringBuilder();
+            var currentBytes = new List<byte>();
             for (byte i = 1; i != 0; i++)
             {
                 foreach (var ch in text)
                 {
-                    builder.Append((char) (ch ^ i));
+                    currentBytes.Add((byte)(ch ^ i));
                 }
-                result.Add(builder.ToString());
-                builder.Clear();
+
+                var encodedBytes = Encoding.Convert(Encoding.Default, Encoding.UTF8, currentBytes.ToArray());
+                result.Add(Encoding.UTF8.GetString(encodedBytes));
+                currentBytes.Clear();
             }
 
             return result;
