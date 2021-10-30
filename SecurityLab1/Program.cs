@@ -19,7 +19,7 @@ namespace SecurityLab1
         {
             foreach (var arg in args)
             {
-                var keyValuePair = arg.Split(" ");
+                var keyValuePair = arg.Split("=");
                 var keyPart = keyValuePair.FirstOrDefault();
                 var valuePart = keyValuePair.LastOrDefault();
                 if (Keys.ContainsKey(keyPart))
