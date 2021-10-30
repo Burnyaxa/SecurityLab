@@ -2,6 +2,7 @@
 {
     public enum TasksEnum
     {
-        XorCipher = 0
+        BinaryBase64 = 0,
+        XorCipher = 1
     }
 }

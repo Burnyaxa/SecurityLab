@@ -1,4 +1,5 @@
-﻿using SecurityLab1.Enum;
+﻿using System;
+using SecurityLab1.Enum;
 using SecurityLab1.Interfaces;
 using SecurityLab1.TaskSolvers;
 
@@ -8,7 +9,12 @@ namespace SecurityLab1.Factories
     {
         public ITaskSolver GetTaskSolver(TasksEnum task)
         {
-            return new XorCipherSolver();
+            return task switch
+            {
+                TasksEnum.BinaryBase64 => new BinaryBase64Solver(),
+                TasksEnum.XorCipher => new XorCipherSolver(),
+                _ => throw new ArgumentException("No such task.")
+            };
         }
     }
 }
