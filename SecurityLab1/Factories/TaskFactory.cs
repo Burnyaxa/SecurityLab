@@ -13,6 +13,7 @@ namespace SecurityLab1.Factories
             {
                 TasksEnum.BinaryBase64 => new BinaryBase64Solver(),
                 TasksEnum.XorCipher => new XorCipherSolver(),
+                TasksEnum.RepeatingXorCipher => new RepeatingXorCipherSolver(),
                 _ => throw new ArgumentException("No such task.")
             };
         }
