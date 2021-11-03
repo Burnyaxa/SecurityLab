@@ -8,20 +8,24 @@ function SolveXOR(text) {
         bytes.push(byte);
     }
     for (let i = 0; i < 256; i++) {
-        result[i] = Buffer.from(bytes.map(byte => byte ^ i)).toString('utf8');
+        const buffer = [];
+        for (let j = 0; j < bytes.length; j++) {
+            buffer.push(bytes[j] ^ i);
+        }
+        result.push(Buffer.from(buffer).toString('utf-8'))
     }
-    const results = []
+    const filteredResults = []
     result.filter((str) => {
         const result1 = str.split('\n').filter(substr => {
             return substr.match(/^[a-z0-9!"#$%&'()*+,.\/:;“”‘’<=>?@\[\] _`{|}~-]*$/i) !== null
         });
         if (result1.length !== 0) {
-            results.push(result1);
+            filteredResults.push(result1);
             return true
         }
         return false
     });
-    return results;
+    return filteredResults;
 }
 
 const encryptedText = fs.readFileSync('./text1.txt')
