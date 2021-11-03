@@ -1,0 +1,10 @@
+C,
+dE],K,rex,YBE_FN,K,AOS,CY,REX,REX,KDN,REX,IBKX,KDN,YE,sE_,GKS,_YO,KD,CDNOR,EL,bKGGCDM,aKYCYAC,EX,SE_,LOOF,]E_FN,YBE]
+Now try a repeating-key XOR cipher. E.g. it should take a string “hello world” and, given the key is “key”, xor the first letter “h” with “k”, then xor “e” with “e”, then “l” with “y”, and then xor next char “l” with “k” again, then “o” with “e” and so on. You may use an index of coincidence, Hamming distance, Kasiski examination, statistical tests or whatever method you feel would show the best result.
+,P
+
+
++,E
+
+
+ 2(2*(a$9 ,(/ 5(./ma25 5(25(" -a5$252a.3a6) 5$7$3a,$5).%a8.4a'$$-a6.4-%a2).6a5)$a#$25a3$24-5o
