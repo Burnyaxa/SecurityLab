@@ -3,12 +3,12 @@ const {
     randomInt
 } = require('crypto');
 
-const BASE_AMOUNT_OF_POPULATIONS = 100;
+const BASE_AMOUNT_OF_POPULATIONS = 200;
 const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 const COUNT_OF_TOP_POPULATION = 50;
 const ENCRYPTED_TEXT = fs.readFileSync('./text3.txt').toString();
-const PROBABILITY_OF_MUTATION = 80;
-const AMOUNT_OF_ITERATION = 10000;
+const PROBABILITY_OF_MUTATION = 70;
+const AMOUNT_OF_ITERATION = 8000;
 const ANSWER = {
     A: 'E',
     B: 'K',
@@ -147,42 +147,61 @@ const getTwoRandomNumbers = (min = 0, max = ALPHABET.length) => {
     }
 }
 
-// const updateChromo = (chromo, char, repl) => {
-//     let currentRepl = chromo[char];
-//     let currentChar = chromo[repl];
-//
-//     if (currentChar === repl) {
-//         currentChar = currentRepl;
-//     } else if (currentRepl === char) {
-//         currentRepl = currentChar;
-//     }
-//
-//     chromo[currentChar] = currentRepl;
-//     chromo[currentRepl] = currentChar;
-//
-//     chromo[char] = repl;
-//     chromo[repl] = char;
-//
-//     return chromo
-// }
+const mutation = (chromo, count) => {
+    const newChromo = { ...chromo };
+    for (let i = 0; i < count; i++) {
+        const {firstNumber, secondNumber} = getTwoRandomNumbers();
+        const firstLetter = ALPHABET[firstNumber];
+        const secondLetter = ALPHABET[secondNumber];
+        const temp = newChromo[firstLetter];
+        newChromo[firstLetter] = newChromo[secondLetter];
+        newChromo[secondLetter] = temp;
+    }
+    return newChromo
+}
 
 const crossover = (firstChromo, secondChromo) => {
-    const newChromo = {...firstChromo};
-    let count = 0;
-    for (let char in firstChromo) {
-        if (count % 2 !== 0) {
-            newChromo[char] = secondChromo[char]
-        }
-        count++;
+    let better;
+    let worth;
+    if (calculateScore(decode(ENCRYPTED_TEXT,firstChromo), REF_BIGRAMED_TEXT) > calculateScore(decode(ENCRYPTED_TEXT, secondChromo), REF_BIGRAMED_TEXT)) {
+        better = firstChromo;
+        worth = secondChromo;
+    } else {
+        better = secondChromo;
+        worth = firstChromo;
     }
+    const newChromo = {};
+    let counter = 0;
+    const listKey = [];
+    const listValue = ALPHABET.split('');
+    for (let char in better) {
+        if (counter > 16) {
+            listKey.push(char);
+        } else {
+            newChromo[char] = better[char];
+            listValue.splice(listValue.indexOf(better[char]), 1);
+        }
+        counter++;
+    }
+    const newListKey = [];
+    listKey.forEach(char => {
+        const value = worth[char];
+        if (!Object.values(newChromo).includes(value) && !Object.keys(newChromo).includes(char)) {
+            newChromo[char] = value;
+            listValue.splice(listValue.indexOf(value), 1);
+        } else {
+            newListKey.push(char)
+        }
+    });
+    for (let i = 0; i < newListKey.length; i++) {
+        newChromo[newListKey[i]] = listValue[i];
+    }
+
     const scoreBeforeMutation = calculateScore(decode(ENCRYPTED_TEXT, newChromo), REF_BIGRAMED_TEXT);
     let scoreAfterMutation = 0;
     const randomNumber = Math.floor(Math.random() * 100);
     if (randomNumber <= PROBABILITY_OF_MUTATION) {
-        const {firstNumber, secondNumber} = getTwoRandomNumbers();
-        const firstLetter = ALPHABET[firstNumber];
-        const secondLetter = ALPHABET[secondNumber];
-        const newMutatedChromo = { ...newChromo, [firstLetter]: secondLetter };
+        const newMutatedChromo = mutation(newChromo, 3);
         scoreAfterMutation = calculateScore(decode(ENCRYPTED_TEXT, newMutatedChromo), REF_BIGRAMED_TEXT);
         if (scoreAfterMutation > scoreBeforeMutation) {
             return newMutatedChromo
@@ -201,7 +220,7 @@ const generate = (populations) => {
     if (theWorstScore < calculateScore(decode(ENCRYPTED_TEXT, newChromo), REF_BIGRAMED_TEXT))  {
         newPopulations[theWorstIndex] = newChromo;
     }
-    return newPopulations
+    return {newPopulations, theWorstScore}
 }
 
 // const mutation = (population) => {
@@ -222,11 +241,14 @@ const generate = (populations) => {
 // }
 
 let result = initMapping(BASE_AMOUNT_OF_POPULATIONS);
-const {topScore} = select(result, true, 1);
-console.log(topScore)
+let {topScore} = select(result, true, 1);
 for (let i = 0; i < AMOUNT_OF_ITERATION; i++) {
     console.log(i);
-    result = [...generate(result)];
+    const generated = generate(result)
+    result = [...generated.newPopulations];
+    if (generated.theWorstScore > 6350000000000) {
+        break;
+    }
 }
 const {topPopulations} = select(result, true, COUNT_OF_TOP_POPULATION);
 console.log(topPopulations[0])
