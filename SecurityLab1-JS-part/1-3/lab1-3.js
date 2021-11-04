@@ -1,7 +1,10 @@
-const fs = require('fs')
+const fs = require('fs');
+const {
+    randomInt
+} = require('crypto');
 
 const BASE_AMOUNT_OF_POPULATIONS = 500;
-const ALPHABET = 'ABCDEFGHILMNOPQRSTUVZ'
+const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 const COUNT_OF_TOP_POPULATION = 50;
 const ENCRYPTED_TEXT = fs.readFileSync('./text3.txt').toString();
 const PROBABILITY_OF_MUTATION = 5;
@@ -18,7 +21,7 @@ const uploadRefBigramPairs = (path) => {
 const REF_BIGRAMED_TEXT = uploadRefBigramPairs('./bigrams.json');
 
 function getRandomNumber(min, max) {
-    return Math.floor(Math.random() * (max - min) + min);
+    return randomInt(min,max);
 }
 
 const initMapping = (amount) => {
@@ -28,7 +31,7 @@ const initMapping = (amount) => {
         const result = {};
         for (let i = 0; i < ALPHABET.length; i++) {
             if (result.hasOwnProperty(ALPHABET[i])) continue;
-            const randomNumber = getRandomNumber(0, baseSet.length - 1)
+            const randomNumber = getRandomNumber(0, baseSet.length)
             const randomLetter = baseSet[randomNumber];
             result[ALPHABET[i]] = randomLetter
             result[randomLetter] = ALPHABET[i]
@@ -100,7 +103,7 @@ const select = (populations, isAsc, numb) => {
     }
 }
 
-const getTwoRandomNumbers = (min = 0, max = ALPHABET.length - 1) => {
+const getTwoRandomNumbers = (min = 0, max = ALPHABET.length) => {
     let firstNumber = 0;
     let secondNumber = 0;
     while (firstNumber === secondNumber) {
@@ -113,14 +116,48 @@ const getTwoRandomNumbers = (min = 0, max = ALPHABET.length - 1) => {
     }
 }
 
+// def update_mapping(mapping, char, repl):
+// # Update the solution by switching `char` with `repl`
+//     # and `repl` with `char`.
+//     current_repl = mapping[char]
+//     current_char = mapping[repl]
+//
+// if current_char == repl:
+// current_char = current_repl
+// elif current_repl == char:
+// current_repl = current_char
+//
+// mapping[current_char] = current_repl
+// mapping[current_repl] = current_char
+//
+// mapping[char] = repl
+// mapping[repl] = char
+
+const updateChromo = (chromo, char, repl) => {
+    let currentRepl = chromo[char];
+    let currentChar = chromo[repl];
+
+    if (currentChar === repl) {
+        currentChar = currentRepl;
+    } else if (currentRepl === char) {
+        currentRepl = currentChar;
+    }
+
+    chromo[currentChar] = currentRepl;
+    chromo[currentRepl] = currentChar;
+
+    chromo[char] = repl;
+    chromo[repl] = char;
+
+    return chromo
+}
+
 const crossover = (firstChromo, secondChromo) => {
-    const newChromo = {};
+    let newChromo = {...firstChromo};
     let count = 0;
     for (let char in firstChromo) {
-        if (count < Object.keys(firstChromo).length) {
-            newChromo[char] = firstChromo[char]
-        } else {
-            newChromo[char] = secondChromo[char]
+        if (count % 2 !== 0) {
+            newChromo = updateChromo(newChromo, char, secondChromo[char])
         }
         count++;
     }
@@ -128,12 +165,15 @@ const crossover = (firstChromo, secondChromo) => {
     let scoreAfterMutation = 0;
     const randomNumber = Math.floor(Math.random() * 100);
     if (randomNumber <= PROBABILITY_OF_MUTATION) {
-        const newMutatedChromo = {...newChromo}
         const {firstNumber, secondNumber} = getTwoRandomNumbers();
         const firstLetter = ALPHABET[firstNumber];
         const secondLetter = ALPHABET[secondNumber];
-        newMutatedChromo[firstLetter] = newChromo[secondLetter];
-        newMutatedChromo[secondLetter] = newChromo[firstLetter];
+        console.log(firstLetter);
+        console.log(secondLetter)
+        const newMutatedChromo = updateChromo(newChromo, firstLetter, secondLetter)
+        console.log(newChromo)
+        console.log(newMutatedChromo)
+        console.log('AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA')
         scoreAfterMutation = calculateScore(decode(ENCRYPTED_TEXT, newMutatedChromo), REF_BIGRAMED_TEXT);
         if (scoreAfterMutation > scoreBeforeMutation) {
             return newMutatedChromo
@@ -146,26 +186,30 @@ const generate = (populations) => {
     const newPopulations = [...populations];
     const {firstNumber, secondNumber} = getTwoRandomNumbers(0, populations.length - 1);
     const newChromo = crossover(populations[firstNumber], populations[secondNumber]);
-    const { topPopulations: [theWorst] } = select(newPopulations, false, 1);
+    const { topPopulations: [theWorst], topScore: theWorstScore } = select(newPopulations, false, 1);
+    console.log(theWorstScore)
     const theWorstIndex = newPopulations.findIndex(x => JSON.stringify(x) === JSON.stringify(theWorst))
-    if (calculateScore(decode(ENCRYPTED_TEXT, theWorst), REF_BIGRAMED_TEXT) < calculateScore(decode(ENCRYPTED_TEXT, newChromo), REF_BIGRAMED_TEXT)) {
+    if (theWorstScore < calculateScore(decode(ENCRYPTED_TEXT, newChromo), REF_BIGRAMED_TEXT))  {
         newPopulations[theWorstIndex] = newChromo;
+        if (topScore < calculateScore(decode(ENCRYPTED_TEXT, newChromo), REF_BIGRAMED_TEXT)) {
+            console.log('AAAAAAAAAA')
+            console.log(newChromo)
+        }
     }
     return newPopulations
 }
 
-const main = () => {
-    const initPopulation = initMapping(BASE_AMOUNT_OF_POPULATIONS);
-    let result = initPopulation;
-    for (let i = 0; i < AMOUNT_OF_ITERATION; i++) {
-        console.log(i)
-        result = [...generate(result)]
-    }
-    const {topPopulations} = select(result, true, COUNT_OF_TOP_POPULATION);
-    for (let i = 0; i < topPopulations.length; i++) {
-        fs.appendFileSync('./result.txt', topPopulations[i]);
-        fs.appendFileSync('./result.txt', '\n------------------------------\n');
-    }
+let result = initMapping(BASE_AMOUNT_OF_POPULATIONS);
+const {topScore} = select(result, true, 1);
+console.log(topScore)
+for (let i = 0; i < AMOUNT_OF_ITERATION; i++) {
+    console.log(i)
+    result = [...generate(result)]
 }
-
-main()
+const {topPopulations} = select(result, true, COUNT_OF_TOP_POPULATION);
+let text = '';
+for (let i = 0; i < topPopulations.length; i++) {
+    text += decode(ENCRYPTED_TEXT, topPopulations[i]);
+    text += '\n------------------------------\n';
+}
+fs.writeFileSync('./result.txt', text);
