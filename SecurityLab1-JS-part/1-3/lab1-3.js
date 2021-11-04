@@ -3,12 +3,40 @@ const {
     randomInt
 } = require('crypto');
 
-const BASE_AMOUNT_OF_POPULATIONS = 500;
+const BASE_AMOUNT_OF_POPULATIONS = 100;
 const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 const COUNT_OF_TOP_POPULATION = 50;
 const ENCRYPTED_TEXT = fs.readFileSync('./text3.txt').toString();
-const PROBABILITY_OF_MUTATION = 5;
-const AMOUNT_OF_ITERATION = 1000;
+const PROBABILITY_OF_MUTATION = 80;
+const AMOUNT_OF_ITERATION = 10000;
+const ANSWER = {
+    A: 'E',
+    B: 'K',
+    C: 'M',
+    D: 'F',
+    E: 'L',
+    F: 'G',
+    G: 'D',
+    H: 'Q',
+    I: 'V',
+    J: 'Z',
+    K: 'N',
+    L: 'T',
+    M: 'O',
+    N: 'W',
+    O: 'Y',
+    P: 'H',
+    Q: 'X',
+    R: 'U',
+    S: 'S',
+    T: 'P',
+    U: 'A',
+    V: 'I',
+    W: 'B',
+    X: 'R',
+    Y: 'C',
+    Z: 'J',
+}
 
 const uploadRefBigramPairs = (path) => {
     const data = JSON.parse(fs.readFileSync(path).toString());
@@ -32,24 +60,27 @@ const initMapping = (amount) => {
         for (let i = 0; i < ALPHABET.length; i++) {
             if (result.hasOwnProperty(ALPHABET[i])) continue;
             const randomNumber = getRandomNumber(0, baseSet.length)
-            const randomLetter = baseSet[randomNumber];
-            result[ALPHABET[i]] = randomLetter
-            result[randomLetter] = ALPHABET[i]
+            result[ALPHABET[i]] = baseSet[randomNumber]
             baseSet.splice(randomNumber, 1);
-            const potentialIndex = baseSet.indexOf(ALPHABET[i])
-            if (potentialIndex !== -1) {
-                baseSet.splice(potentialIndex, 1)
-            }
         }
         results.push(result)
     }
     return results
 }
 
+function swap(json){
+    var ret = {};
+    for(var key in json){
+        ret[json[key]] = key;
+    }
+    return ret;
+}
+
 const decode = (cipheredText, key) => {
     const resultText = [];
+    const decodedKey = swap(key);
     cipheredText.split('').forEach(char => {
-        resultText.push(key[char]);
+        resultText.push(decodedKey[char]);
     })
     return resultText.join('')
 }
@@ -116,48 +147,31 @@ const getTwoRandomNumbers = (min = 0, max = ALPHABET.length) => {
     }
 }
 
-// def update_mapping(mapping, char, repl):
-// # Update the solution by switching `char` with `repl`
-//     # and `repl` with `char`.
-//     current_repl = mapping[char]
-//     current_char = mapping[repl]
+// const updateChromo = (chromo, char, repl) => {
+//     let currentRepl = chromo[char];
+//     let currentChar = chromo[repl];
 //
-// if current_char == repl:
-// current_char = current_repl
-// elif current_repl == char:
-// current_repl = current_char
+//     if (currentChar === repl) {
+//         currentChar = currentRepl;
+//     } else if (currentRepl === char) {
+//         currentRepl = currentChar;
+//     }
 //
-// mapping[current_char] = current_repl
-// mapping[current_repl] = current_char
+//     chromo[currentChar] = currentRepl;
+//     chromo[currentRepl] = currentChar;
 //
-// mapping[char] = repl
-// mapping[repl] = char
-
-const updateChromo = (chromo, char, repl) => {
-    let currentRepl = chromo[char];
-    let currentChar = chromo[repl];
-
-    if (currentChar === repl) {
-        currentChar = currentRepl;
-    } else if (currentRepl === char) {
-        currentRepl = currentChar;
-    }
-
-    chromo[currentChar] = currentRepl;
-    chromo[currentRepl] = currentChar;
-
-    chromo[char] = repl;
-    chromo[repl] = char;
-
-    return chromo
-}
+//     chromo[char] = repl;
+//     chromo[repl] = char;
+//
+//     return chromo
+// }
 
 const crossover = (firstChromo, secondChromo) => {
-    let newChromo = {...firstChromo};
+    const newChromo = {...firstChromo};
     let count = 0;
     for (let char in firstChromo) {
         if (count % 2 !== 0) {
-            newChromo = updateChromo(newChromo, char, secondChromo[char])
+            newChromo[char] = secondChromo[char]
         }
         count++;
     }
@@ -168,12 +182,7 @@ const crossover = (firstChromo, secondChromo) => {
         const {firstNumber, secondNumber} = getTwoRandomNumbers();
         const firstLetter = ALPHABET[firstNumber];
         const secondLetter = ALPHABET[secondNumber];
-        console.log(firstLetter);
-        console.log(secondLetter)
-        const newMutatedChromo = updateChromo(newChromo, firstLetter, secondLetter)
-        console.log(newChromo)
-        console.log(newMutatedChromo)
-        console.log('AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA')
+        const newMutatedChromo = { ...newChromo, [firstLetter]: secondLetter };
         scoreAfterMutation = calculateScore(decode(ENCRYPTED_TEXT, newMutatedChromo), REF_BIGRAMED_TEXT);
         if (scoreAfterMutation > scoreBeforeMutation) {
             return newMutatedChromo
@@ -184,29 +193,43 @@ const crossover = (firstChromo, secondChromo) => {
 
 const generate = (populations) => {
     const newPopulations = [...populations];
-    const {firstNumber, secondNumber} = getTwoRandomNumbers(0, populations.length - 1);
+    const {firstNumber, secondNumber} = getTwoRandomNumbers(0, populations.length);
     const newChromo = crossover(populations[firstNumber], populations[secondNumber]);
     const { topPopulations: [theWorst], topScore: theWorstScore } = select(newPopulations, false, 1);
     console.log(theWorstScore)
     const theWorstIndex = newPopulations.findIndex(x => JSON.stringify(x) === JSON.stringify(theWorst))
     if (theWorstScore < calculateScore(decode(ENCRYPTED_TEXT, newChromo), REF_BIGRAMED_TEXT))  {
         newPopulations[theWorstIndex] = newChromo;
-        if (topScore < calculateScore(decode(ENCRYPTED_TEXT, newChromo), REF_BIGRAMED_TEXT)) {
-            console.log('AAAAAAAAAA')
-            console.log(newChromo)
-        }
     }
     return newPopulations
 }
+
+// const mutation = (population) => {
+//     const newPopulation = [...population];
+//     for (let i = 0; i < population.length * PROBABILITY_OF_MUTATION; i++) {
+//         const chromo = population[getRandomNumber(0, population.length)];
+//         const scoreBeforeMutation = calculateScore(decode(ENCRYPTED_TEXT, chromo), REF_BIGRAMED_TEXT);
+//         const {firstNumber, secondNumber} = getTwoRandomNumbers();
+//         const firstLetter = ALPHABET[firstNumber];
+//         const secondLetter = ALPHABET[secondNumber];
+//         const mutatedChromo = updateChromo({ ...chromo }, firstLetter, secondLetter)
+//         const scoreAfterMutation = calculateScore(decode(ENCRYPTED_TEXT, mutatedChromo), REF_BIGRAMED_TEXT);
+//         if (scoreAfterMutation > scoreBeforeMutation) {
+//             return mutatedChromo
+//         }
+//     }
+//     return newPopulation
+// }
 
 let result = initMapping(BASE_AMOUNT_OF_POPULATIONS);
 const {topScore} = select(result, true, 1);
 console.log(topScore)
 for (let i = 0; i < AMOUNT_OF_ITERATION; i++) {
-    console.log(i)
-    result = [...generate(result)]
+    console.log(i);
+    result = [...generate(result)];
 }
 const {topPopulations} = select(result, true, COUNT_OF_TOP_POPULATION);
+console.log(topPopulations[0])
 let text = '';
 for (let i = 0; i < topPopulations.length; i++) {
     text += decode(ENCRYPTED_TEXT, topPopulations[i]);
