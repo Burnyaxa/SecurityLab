@@ -2,14 +2,10 @@ const fs = require('fs');
 
 const BASE_AMOUNT_OF_POPULATIONS = 500;
 const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-const COUNT_OF_TOP_POPULATION = 50;
 const ENCRYPTED_TEXT = fs.readFileSync('./text3.txt').toString();
 const PROBABILITY_OF_MUTATION = 95;
 const AMOUNT_OF_ITERATION = 200;
-const TOURNAMENT_SIZE = 20;
 const PROBABILITY_OF_WINING = 0.75;
-const PROBABILITY_OF_CROSSOVERING = 65;
-const POINTS_OF_CROSSOVER = 5;
 const ELITISM = 0.15;
 const NUMBER_OF_GROUPS = 20;
 
@@ -193,70 +189,6 @@ const mutation = (chromo, count) => {
     return newChromo
 }
 
-// const crossover = (firstChromo, secondChromo) => {
-//     let better;
-//     let worth;
-//     if (calculateScore(decode(ENCRYPTED_TEXT,firstChromo), REF_BIGRAMED_TEXT) > calculateScore(decode(ENCRYPTED_TEXT, secondChromo), REF_BIGRAMED_TEXT)) {
-//         better = firstChromo;
-//         worth = secondChromo;
-//     } else {
-//         better = secondChromo;
-//         worth = firstChromo;
-//     }
-//     const newChromo = {};
-//     let counter = 0;
-//     const listKey = [];
-//     const listValue = ALPHABET.split('');
-//     for (let char in better) {
-//         if (counter > 16) {
-//             listKey.push(char);
-//         } else {
-//             newChromo[char] = better[char];
-//             listValue.splice(listValue.indexOf(better[char]), 1);
-//         }
-//         counter++;
-//     }
-//     const newListKey = [];
-//     listKey.forEach(char => {
-//         const value = worth[char];
-//         if (!Object.values(newChromo).includes(value) && !Object.keys(newChromo).includes(char)) {
-//             newChromo[char] = value;
-//             listValue.splice(listValue.indexOf(value), 1);
-//         } else {
-//             newListKey.push(char)
-//         }
-//     });
-//     for (let i = 0; i < newListKey.length; i++) {
-//         newChromo[newListKey[i]] = listValue[i];
-//     }
-//
-//     const scoreBeforeMutation = calculateScore(decode(ENCRYPTED_TEXT, newChromo), REF_BIGRAMED_TEXT);
-//     let scoreAfterMutation = 0;
-//     const randomNumber = Math.floor(Math.random() * 100);
-//     if (randomNumber <= PROBABILITY_OF_MUTATION) {
-//         const newMutatedChromo = mutation(newChromo, 3);
-//         scoreAfterMutation = calculateScore(decode(ENCRYPTED_TEXT, newMutatedChromo), REF_BIGRAMED_TEXT);
-//         if (scoreAfterMutation > scoreBeforeMutation) {
-//             return newMutatedChromo
-//         }
-//     }
-//     return newChromo
-// }
-
-// const generate = (populations) => {
-//     const newPopulations = [...populations];
-//     const {firstNumber, secondNumber} = getTwoRandomNumbers(0, populations.length);
-//     const newChromo = crossover(populations[firstNumber], populations[secondNumber]);
-//     const { topPopulations: [theWorst], topScore: theWorstScore } = select(newPopulations, false, 1);
-//     console.log(theWorstScore)
-//     const theWorstIndex = newPopulations.findIndex(x => JSON.stringify(x) === JSON.stringify(theWorst))
-//     if (theWorstScore < calculateScore(decode(ENCRYPTED_TEXT, newChromo), REF_BIGRAMED_TEXT))  {
-//         newPopulations[theWorstIndex] = newChromo;
-//     }
-//     return {newPopulations, theWorstScore}
-// }
-
-
 const crossover = (firstChromo, secondChromo) => {
     const newChromo = {};
     let counter = 0;
@@ -321,23 +253,6 @@ const generate = (winers, reserved) => {
     return newPopulation;
 }
 
-// const mutation = (population) => {
-//     const newPopulation = [...population];
-//     for (let i = 0; i < population.length * PROBABILITY_OF_MUTATION; i++) {
-//         const chromo = population[getRandomNumber(0, population.length)];
-//         const scoreBeforeMutation = calculateScore(decode(ENCRYPTED_TEXT, chromo), REF_BIGRAMED_TEXT);
-//         const {firstNumber, secondNumber} = getTwoRandomNumbers();
-//         const firstLetter = ALPHABET[firstNumber];
-//         const secondLetter = ALPHABET[secondNumber];
-//         const mutatedChromo = updateChromo({ ...chromo }, firstLetter, secondLetter)
-//         const scoreAfterMutation = calculateScore(decode(ENCRYPTED_TEXT, mutatedChromo), REF_BIGRAMED_TEXT);
-//         if (scoreAfterMutation > scoreBeforeMutation) {
-//             return mutatedChromo
-//         }
-//     }
-//     return newPopulation
-// }
-
 const tournament = (population) => {
     const {topPopulations: sortedPopulation} = select(population, true);
     const randomNumber = getRandomNumber(0, 1E+15) / 1E+15;
@@ -354,9 +269,7 @@ const tournament = (population) => {
 let result = initMapping(BASE_AMOUNT_OF_POPULATIONS, true);
 for (let i = 0; i < AMOUNT_OF_ITERATION; i++) {
     const groups = [];
-    console.log(i)
     const elita = select(result, true);
-    console.log(elita.topScore);
     const reserved = elita.topPopulations.slice(0, BASE_AMOUNT_OF_POPULATIONS * ELITISM);
     for (let i = 0; i < NUMBER_OF_GROUPS; i++) {
         const group = [];
@@ -370,10 +283,6 @@ for (let i = 0; i < AMOUNT_OF_ITERATION; i++) {
     const winers = groups.map(group => tournament(group));
     result = generate(winers, reserved);
 }
-const {topPopulations, topScore: topTopScore} = select(result, true);
-console.log('RESULTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT')
-console.log(topPopulations[0])
-console.log(topTopScore)
 let text = '';
 for (let i = 0; i < topPopulations.length; i++) {
     text += decode(ENCRYPTED_TEXT, topPopulations[i]);
