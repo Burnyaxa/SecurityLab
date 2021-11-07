@@ -42,6 +42,7 @@ class GeneticAlgo {
     TOURNAMENT_SIZE;
     TOP_RESULTS;
     STABILITY_INTERVALS;
+    IS_ASC;
 
     constructor(config) {
         this.ENCRYPTED_TEXT = config.encryptedText;
@@ -57,6 +58,7 @@ class GeneticAlgo {
         this.TOURNAMENT_SIZE = config.tournamentSize;
         this.TOP_RESULTS = config.topResults;
         this.STABILITY_INTERVALS = config.stabilityInterval;
+        this.IS_ASC = config.isAsc ?? true;
     }
 
     generateSeed() {
@@ -101,7 +103,7 @@ class GeneticAlgo {
         return results
     }
 
-    decode(cipheredText, key) {
+    static decode(cipheredText, key) {
         const resultText = [];
         const decodedKey = swap(key);
         cipheredText.split('').forEach(char => {
@@ -113,8 +115,8 @@ class GeneticAlgo {
     select(population, isAsc) {
         const scores = []
         population.forEach(chromo => {
-            const decodedText = this.decode(this.ENCRYPTED_TEXT, chromo);
-            const score = this.calculateScore(decodedText, this.REF_NGRAMED_TEXT)
+            const decodedText = GeneticAlgo.decode(this.ENCRYPTED_TEXT, chromo);
+            const score = this.calculateScore(decodedText)
             scores.push([chromo, score]);
         })
         const sortedPopulation = scores.sort((a, b) => isAsc ? b[1] - a[1] : a[1] - b[1])
@@ -125,7 +127,7 @@ class GeneticAlgo {
     }
 
     tournament(population) {
-        const {topPopulations: sortedPopulation} = this.select(population, true);
+        const {topPopulations: sortedPopulation} = this.select(population, this.IS_ASC);
         const randomNumber = getRandomNumber(0, 1E+15) / 1E+15;
         let total = 0;
         for (let i = population.length - 1; i >= 0; i--) {
@@ -178,12 +180,12 @@ class GeneticAlgo {
             newChromo[newListKey[i]] = listValue[i];
         }
 
-        const scoreBeforeMutation = this.calculateScore(this.decode(this.ENCRYPTED_TEXT, newChromo), this.REF_NGRAMED_TEXT);
+        const scoreBeforeMutation = this.calculateScore(GeneticAlgo.decode(this.ENCRYPTED_TEXT, newChromo));
         let scoreAfterMutation = 0;
         const randomNumber = Math.floor(Math.random() * 100);
         if (randomNumber <= this.PROBABILITY_OF_MUTATION) {
             const newMutatedChromo = this.mutation(newChromo, 3);
-            scoreAfterMutation = this.calculateScore(this.decode(this.ENCRYPTED_TEXT, newMutatedChromo), this.REF_NGRAMED_TEXT);
+            scoreAfterMutation = this.calculateScore(GeneticAlgo.decode(this.ENCRYPTED_TEXT, newMutatedChromo));
             if (scoreAfterMutation > scoreBeforeMutation) {
                 return newMutatedChromo
             }
@@ -231,10 +233,10 @@ class GeneticAlgo {
     findAnswer() {
         let result = this.initMapping(this.POPULATION_SIZE, true);
         let counter = 0;
-        let bestResult = (this.select(result, true)).topScore;
+        let bestResult = (this.select(result, this.IS_ASC)).topScore;
         for (let i = 0; i < this.AMOUNT_OF_ITERATION && counter < this.STABILITY_INTERVALS; i++) {
             console.log(i)
-            const elita = this.select(result, true);
+            const elita = this.select(result, this.IS_ASC);
             console.log(elita.topScore)
             if (bestResult === elita.topScore) {
                 counter++;
@@ -252,7 +254,7 @@ class GeneticAlgo {
 
     writeDecryptedTextToTheFile(population) {
         let text = '';
-        const {topPopulations} = this.select(population, true);
+        const {topPopulations} = this.select(population, this.IS_ASC);
         for (let i = 0; i < this.TOP_RESULTS; i++) {
             text += this.decode(this.ENCRYPTED_TEXT, topPopulations[i]);
             text += '\n------------------------------\n';
@@ -300,7 +302,39 @@ class GeneticAlgoForMonoAlphabet extends GeneticAlgo {
 
 }
 
+class GeneticAlgoForPolyAlphabet extends GeneticAlgo {
+    constructor(config) {
+        super(config);
+    }
+
+    calculateScore(decryptedText) {
+        const frequencyTable = {}
+        for(let i = 0; i < decryptedText.length; i++) {
+            if (Object.keys(frequencyTable).includes(decryptedText[i])) {
+                frequencyTable[i]++;
+            } else {
+                frequencyTable[i] = 1;
+            }
+        }
+        for (let char in this.FREQUENCY_TABLE) {
+            if (Object.keys(frequencyTable).includes(char)) {
+                frequencyTable[char] = Math.abs(this.FREQUENCY_TABLE[char] - (frequencyTable[char.toUpperCase()] / decryptedText.length));
+            } else {
+                frequencyTable[char] = this.FREQUENCY_TABLE[char];
+            }
+        }
+        let result = 0;
+        for (let char in frequencyTable) {
+            result +=  frequencyTable[char]
+        }
+
+        return result;
+    }
+
+}
+
 module.exports = {
     GeneticAlgo,
-    GeneticAlgoForMonoAlphabet
+    GeneticAlgoForMonoAlphabet,
+    GeneticAlgoForPolyAlphabet
 };

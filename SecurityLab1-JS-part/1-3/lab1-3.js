@@ -32,8 +32,3 @@ const main = () => {
 }
 
 main();
-
-module.exports = {
-    ENGLISH_FREQUENCY_TABLE,
-    ALPHABET
-}
