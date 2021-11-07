@@ -1,5 +1,6 @@
 'use strict';
 
+const fs = require('fs');
 const { ALPHABET } = require('./constants');
 
 function getRandomNumber(min, max) {
@@ -40,6 +41,7 @@ class GeneticAlgo {
     ELITISM;
     TOURNAMENT_SIZE;
     TOP_RESULTS;
+    STABILITY_INTERVALS;
 
     constructor(config) {
         this.ENCRYPTED_TEXT = config.encryptedText;
@@ -54,6 +56,7 @@ class GeneticAlgo {
         this.ELITISM = config.elitism;
         this.TOURNAMENT_SIZE = config.tournamentSize;
         this.TOP_RESULTS = config.topResults;
+        this.STABILITY_INTERVALS = config.stabilityInterval;
     }
 
     generateSeed() {
@@ -211,23 +214,36 @@ class GeneticAlgo {
         return newPopulation;
     }
 
+    splitForGroups(population) {
+        const groups = [];
+        for (let i = 0; i < this.TOURNAMENT_SIZE; i++) {
+            const group = [];
+            for (let i = 0; i < this.POPULATION_SIZE / this.TOURNAMENT_SIZE; i++) {
+                const randomNumber = getRandomNumber(0, population.length);
+                group.push(population[randomNumber]);
+                population.splice(randomNumber, 1);
+            }
+            groups.push(group);
+        }
+        return groups;
+    }
+
     findAnswer() {
         let result = this.initMapping(this.POPULATION_SIZE, true);
-        for (let i = 0; i < this.AMOUNT_OF_ITERATION; i++) {
-            const groups = [];
+        let counter = 0;
+        let bestResult = (this.select(result, true)).topScore;
+        for (let i = 0; i < this.AMOUNT_OF_ITERATION && counter < this.STABILITY_INTERVALS; i++) {
             console.log(i)
             const elita = this.select(result, true);
             console.log(elita.topScore)
-            const reserved = elita.topPopulations.slice(0, this.POPULATION_SIZE * this.ELITISM);
-            for (let i = 0; i < this.TOURNAMENT_SIZE; i++) {
-                const group = [];
-                for (let i = 0; i < this.POPULATION_SIZE / this.TOURNAMENT_SIZE; i++) {
-                    const randomNumber = getRandomNumber(0, result.length);
-                    group.push(result[randomNumber]);
-                    result.splice(randomNumber, 1);
-                }
-                groups.push(group);
+            if (bestResult === elita.topScore) {
+                counter++;
+            } else {
+                bestResult = elita.topScore;
+                counter = 0;
             }
+            const reserved = elita.topPopulations.slice(0, this.POPULATION_SIZE * this.ELITISM);
+            const groups = this.splitForGroups(result);
             const winers = groups.map(group => this.tournament(group));
             result = this.generate(winers, reserved);
         }

@@ -24,7 +24,8 @@ const main = () => {
         pathResult: './result.txt',
         elitism: 0.15,
         tournamentSize: 20,
-        topResults: 50
+        topResults: 50,
+        stabilityInterval: 30,
     })
     const results = algo.findAnswer();
     algo.writeDecryptedTextToTheFile(results);
