@@ -1,5 +1,7 @@
 'use strict';
 
+const { ALPHABET } = require('./constants');
+
 function getRandomNumber(min, max) {
     return Math.floor(Math.random() * (max - min) + min);
 }
@@ -54,7 +56,7 @@ class GeneticAlgo {
         this.TOP_RESULTS = config.topResults;
     }
 
-    generateSeed () {
+    generateSeed() {
         const scores = {};
         this.ALPHABET.split('').forEach(char => {
             scores[char] = 0;
@@ -63,10 +65,10 @@ class GeneticAlgo {
             scores[char]++;
         })
         const sortedResult = Object.fromEntries(
-            Object.entries(scores).sort(([,a],[,b]) => a-b)
+            Object.entries(scores).sort(([, a], [, b]) => a - b)
         );
         const sortedFrequencyTable = Object.fromEntries(
-            Object.entries(this.FREQUENCY_TABLE).sort(([,a],[,b]) => a-b)
+            Object.entries(this.FREQUENCY_TABLE).sort(([, a], [, b]) => a - b)
         );
         const resultKeys = Object.keys(sortedResult);
         const frequencyKeys = Object.keys(sortedFrequencyTable);
@@ -77,7 +79,7 @@ class GeneticAlgo {
         return result;
     }
 
-    initMapping (amount, isStart = false) {
+    initMapping(amount, isStart = false) {
         const results = [];
         if (isStart) {
             results.push(this.generateSeed())
@@ -96,45 +98,13 @@ class GeneticAlgo {
         return results
     }
 
-    decode (cipheredText, key) {
+    decode(cipheredText, key) {
         const resultText = [];
         const decodedKey = swap(key);
         cipheredText.split('').forEach(char => {
             resultText.push(decodedKey[char]);
         })
         return resultText.join('')
-    }
-
-    ngramingText (text) {
-        const pairs = [];
-        for (let i = 0; i < text.length - 3; i++) {
-            pairs.push(text.substring(i, i + 4))
-        }
-        const result = {};
-        pairs.forEach(pair => {
-            if (result.hasOwnProperty(pair)) {
-                result[pair]++
-            } else {
-                result[pair] = 1;
-            }
-        })
-
-        return result;
-    }
-
-    calculateScore(decryptedText) {
-        const ngramingText = this.ngramingText(decryptedText);
-        let totalSum = 0;
-        for (let bigram in ngramingText) {
-            if (bigram.length !== 4) continue;
-            const value = this.REF_NGRAMED_TEXT[bigram.toLowerCase()]
-            if (value) {
-                totalSum += value;
-            } else {
-                totalSum += (-10)
-            }
-        }
-        return totalSum;
     }
 
     select(population, isAsc) {
@@ -152,7 +122,7 @@ class GeneticAlgo {
     }
 
     tournament(population) {
-        const { topPopulations: sortedPopulation } = this.select(population, true);
+        const {topPopulations: sortedPopulation} = this.select(population, true);
         const randomNumber = getRandomNumber(0, 1E+15) / 1E+15;
         let total = 0;
         for (let i = population.length - 1; i >= 0; i--) {
@@ -164,7 +134,7 @@ class GeneticAlgo {
         return sortedPopulation[0];
     }
 
-    mutation (chromo, count) {
+    mutation(chromo, count) {
         const newChromo = {...chromo};
         for (let i = 0; i < count; i++) {
             const {firstNumber, secondNumber} = getTwoRandomNumbers();
@@ -177,7 +147,7 @@ class GeneticAlgo {
         return newChromo
     }
 
-    crossover (firstChromo, secondChromo) {
+    crossover(firstChromo, secondChromo) {
         const newChromo = {};
         let counter = 0;
         const listKey = [];
@@ -218,7 +188,7 @@ class GeneticAlgo {
         return newChromo
     }
 
-    generate (winers, reserved) {
+    generate(winers, reserved) {
         const newPopulation = [...reserved];
         winers.forEach(winer => {
             if (newPopulation.findIndex(chromo => JSON.stringify(chromo) === JSON.stringify(winer)) === -1) {
@@ -264,9 +234,9 @@ class GeneticAlgo {
         return result
     }
 
-    writeDecryptedTextToTheFile (population) {
+    writeDecryptedTextToTheFile(population) {
         let text = '';
-        const { topPopulations } = this.select(population, true);
+        const {topPopulations} = this.select(population, true);
         for (let i = 0; i < this.TOP_RESULTS; i++) {
             text += this.decode(this.ENCRYPTED_TEXT, topPopulations[i]);
             text += '\n------------------------------\n';
@@ -275,4 +245,46 @@ class GeneticAlgo {
     }
 }
 
-module.exports = GeneticAlgo;
+class GeneticAlgoForMonoAlphabet extends GeneticAlgo {
+    constructor(config) {
+        super(config);
+    }
+
+    ngramingText(text) {
+        const pairs = [];
+        for (let i = 0; i < text.length - 3; i++) {
+            pairs.push(text.substring(i, i + 4))
+        }
+        const result = {};
+        pairs.forEach(pair => {
+            if (result.hasOwnProperty(pair)) {
+                result[pair]++
+            } else {
+                result[pair] = 1;
+            }
+        })
+
+        return result;
+    }
+
+    calculateScore(decryptedText) {
+        const ngramingText = this.ngramingText(decryptedText);
+        let totalSum = 0;
+        for (let bigram in ngramingText) {
+            if (bigram.length !== 4) continue;
+            const value = this.REF_NGRAMED_TEXT[bigram.toLowerCase()]
+            if (value) {
+                totalSum += value;
+            } else {
+                totalSum += (-10)
+            }
+        }
+        return totalSum;
+    }
+
+}
+
+module.exports = {
+    GeneticAlgo,
+    GeneticAlgoForMonoAlphabet
+};
