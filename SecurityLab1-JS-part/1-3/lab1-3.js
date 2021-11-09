@@ -1,6 +1,6 @@
 const fs = require('fs');
 const { GeneticAlgoForMonoAlphabet } = require('./geneticAlgo');
-const { ALPHABET, ENGLISH_FREQUENCY_TABLE } = require('./constants');
+const { ALPHABET, ENGLISH_FREQUENCY_TABLE } = require('../utils/constants');
 // const uploadRefBigramPairs = (path) => {
 //     const data = JSON.parse(fs.readFileSync(path).toString());
 //     const result = {}
