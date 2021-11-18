@@ -19,32 +19,22 @@ namespace SecurityLab1.TaskSolvers
             var key = keys.First();
             var groupedStrings = new Dictionary<int, List<string>>();
 
-            var prikol = GetGroupedBytes(encodedText, key);
+            var groupedBytes = GetGroupedBytes(encodedText, key);
 
-            for (int i = 0; i < prikol.Count; i++)
+            for (var i = 0; i < groupedBytes.Count; i++)
             {
-                groupedStrings.Add(i + 1, FrequencyAnalysis(prikol[i].ToArray()));
+                groupedStrings.Add(i + 1, FrequencyAnalysis(groupedBytes[i].ToArray()));
             }
             
             
-            var strs = ConcatStrings(groupedStrings.Values.ToList());
-            var kapec = ConcatPrikol(strs);
+            var combinations = ConcatStrings(groupedStrings.Values.ToList());
+            var results = ConcatCombinations(combinations);
             await using var file = new StreamWriter("result.txt", false, Encoding.UTF8);
-            foreach (var result in kapec)
+            foreach (var result in results)
             {
                 await file.WriteLineAsync("=======");
                 await file.WriteLineAsync(result);
             }
-            //strs.ForEach(Console.WriteLine);
-
-            // var xd = groupedStrings.Values.Aggregate(new List<List<string>>(), (accumulator, seq) =>
-            //     (from ac in accumulator
-            //     from item in seq
-            //     select ac.Concat(new List<string>() {item}).ToList()).ToList());
-            // foreach (var str in xd)
-            // {
-            //     str.ForEach(Console.WriteLine);
-            // }
         }
 
         private Dictionary<int, double> CalculateIndexOfCoincidence(byte[] text)
@@ -53,12 +43,12 @@ namespace SecurityLab1.TaskSolvers
             buffer.AddRange(text);
             var result = new Dictionary<int, double>();
             var coincidenceCount = 0d;
-            for (int i = 0; i < text.Length; i++)
+            for (var i = 0; i < text.Length; i++)
             {
                 var ch = buffer.Last();
                 buffer.RemoveAt(buffer.Count - 1);
                 buffer.Insert(0, ch);
-                for (int j = 0; j < text.Length - 1; j++)
+                for (var j = 0; j < text.Length - 1; j++)
                 {
                     if (text[j] == buffer[j])
                     {
@@ -68,19 +58,6 @@ namespace SecurityLab1.TaskSolvers
                 result.Add(i + 1, coincidenceCount / text.Length);
                 coincidenceCount = 0d;
             }
-            // for (int i = 1; i < textString.Length; i++)
-            // {
-            //     for (int j = 0; j < textString.Length - i; j++)
-            //     {
-            //         if (textString[j] == textString[j + i])
-            //         {
-            //             coincidenceCount++;
-            //         }
-            //     }
-            //     result.Add(i, coincidenceCount / text.Length);
-            //     coincidenceCount = 0d;
-            // }
-
             return result;
         }
 
@@ -90,7 +67,7 @@ namespace SecurityLab1.TaskSolvers
             var result = new List<int>();
             foreach (var coincidence in coincidences)
             {
-                for (int i = 1; i < coincidences.Count; i++)
+                for (var i = 1; i < coincidences.Count; i++)
                 {
                     if (i % coincidence.Key == 0)
                     {
@@ -174,46 +151,53 @@ namespace SecurityLab1.TaskSolvers
             return frequencyTables.OrderBy(x => x.Value).Take(5).Select(x => x.Key).ToList();
         }
 
-        private List<List<string>> ConcatStrings(List<List<string>> groups)
+        private IEnumerable<List<string>> ConcatStrings(List<List<string>> groups)
         {
             var result = new List<List<string>>();
-            int n = groups.Count;
+            var n = groups.Count;
  
             
-            int []indices = new int[n];
- 
-            
-            for(int i = 0; i < n; i++)
+            var indices = new int[n];
+
+
+            for (var i = 0; i < n; i++)
+            {
                 indices[i] = 0;
+            }
  
             while (true)
             {
                 var currentCombination = new List<string>();
-                for (int i = 0; i < n; i++)
+                for (var i = 0; i < n; i++)
                 {
                     currentCombination.Add(groups[i][indices[i]]);
                 }
                 
                 result.Add(currentCombination);
                 
-                int next = n - 1;
-                while (next >= 0 &&
-                       (indices[next] + 1 >=
-                        groups[next].Count))
+                var next = n - 1;
+                
+                while (next >= 0 && indices[next] + 1 >= groups[next].Count)
+                {
                     next--;
- 
-               
+                }
+
+
                 if (next < 0)
+                {
                     return result;
-                
+                }
+
                 indices[next]++;
-                
-                for(int i = next + 1; i < n; i++)
+
+                for (var i = next + 1; i < n; i++)
+                {
                     indices[i] = 0;
+                }
             }
         }
 
-        private List<string> ConcatPrikol(List<List<string>> listsOfList)
+        private List<string> ConcatCombinations(IEnumerable<List<string>> listsOfList)
         {
             var result = new List<string>();
             foreach (var list in listsOfList)
